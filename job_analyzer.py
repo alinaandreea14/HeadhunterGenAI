@@ -1,38 +1,11 @@
+# ==============================================================================
+# UI - APLICAȚIA STREAMLIT
+# ==============================================================================
+
 import streamlit as st
-import os
-import re
-import requests
 import pandas as pd
-from bs4 import BeautifulSoup
-from typing import List, Literal
-from pydantic import BaseModel, Field
-import instructor
-from groq import Groq
-from dotenv import load_dotenv
-
-# ==============================================================================
-# 1. SETUP & SECURITATE
-# ==============================================================================
-st.set_page_config(page_title="GenAI Headhunter", page_icon="🕵️", layout="wide")
-
-# Încărcăm variabilele din fișierul .env
-load_dotenv()
-
-# Încercăm să luăm cheia din OS (local) sau din Streamlit Secrets (cloud)
-api_key = os.getenv("GROQ_API_KEY")
-
-# Fallback pentru Streamlit Cloud deployment
-if not api_key and "GROQ_API_KEY" in st.secrets:
-    api_key = st.secrets["GROQ_API_KEY"]
-
-# Validare critică: Dacă nu avem cheie, oprim aplicația aici.
-if not api_key:
-    st.error("⛔ EROARE CRITICĂ: Lipsește `GROQ_API_KEY`.")
-    st.info("Te rog creează un fișier `.env` în folderul proiectului și adaugă: GROQ_API_KEY=cheia_ta_aici")
-    st.stop()
-
-# Configurare Client Groq Global (pentru a nu-l reinițializa constant)
-client = instructor.from_groq(Groq(api_key=api_key), mode=instructor.Mode.TOOLS)
+from src.services.scraper import scrape_clean_job_text
+from src.services.llm_service import analyze_job_with_ai
 
 # Sidebar Informativ (Fără input de date sensibile)
 with st.sidebar:
@@ -43,100 +16,6 @@ with st.sidebar:
     st.write("• Web Scraping (BS4)")
     st.write("• Secure Env Variables")
     st.write("• Structured Data (Pydantic)")
-
-
-# ==============================================================================
-# 2. DATA MODELS (PYDANTIC SCHEMAS)
-# ==============================================================================
-
-class SalaryRange(BaseModel):
-    min: int = Field(..., description="Suma minima a salariului")
-    max: int = Field(..., description="Suma maxima a salariului")
-    currency: str = Field(..., description="Moneda (ex: RON, EUR, USD, CHF)")
-    frequency: Literal["anual", "lunar", "pe ora"] = Field(..., description="Frecvența salariului")
-
-class Location(BaseModel):
-    city: str = Field(..., description="Orasul in care se afla jobul")
-    country: str = Field(..., description="Tara in care se afla jobul")
-    is_remote: bool = Field(False, description="True daca jobul este remote sau hibrid")
-
-class RedFlag(BaseModel):
-    severity: Literal["low", "medium", "high"] = Field(..., description="Nivelul de gravitate al red flag-ului")
-    category: Literal["toxicity" "vague", "unrealistic"] = Field(..., description="Categoria problemei identificate")
-
-class JobAnalysis(BaseModel):
-    role_title: str = Field(..., description="Titlul jobului standardizat")
-    company_name: str = Field(..., description="Numele companiei")
-    seniority: Literal["Intern", "Junior", "Mid", "Senior", "Lead", "Architect"] = Field(..., description="Nivelul de experiență dedus")
-    match_score: int = Field(..., ge=0, le=100, description="Scor 0-100: Calitatea descrierii jobului")
-    tech_stack: List[str] = Field(..., description="Listă cu tehnologii specifice (ex: Python, AWS, React)")
-    red_flags: List[RedFlag] = Field(..., description="Lista de semnale de alarmă (toxicitate, stres, vaguitate)")
-    summary: str = Field(..., description="Un rezumat scurt al rolului (max 2 fraze) în limba română")
-    salary_range: SalaryRange = Field(..., description="Intervalul salarial dacă este menționat")
-    job_location: Location = Field(..., description="Informații despre locația jobului")
-
-# ==============================================================================
-# 3. UTILS - SCRAPER (Colectare Date)
-# ==============================================================================
-
-def scrape_clean_job_text(url: str, max_chars: int = 3000) -> str:
-    """
-    Descarcă pagina și returnează un text curat, optimizat pentru contextul LLM.
-    """
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code != 200:
-            return f"Error: Status code {response.status_code}"
-            
-        soup = BeautifulSoup(response.content, 'html.parser')
-        
-        # Eliminăm elementele inutile care consumă tokeni
-        for junk in soup(["script", "style", "nav", "footer", "header", "aside", "iframe"]):
-            junk.decompose()
-            
-        # Extragem textul și eliminăm spațiile multiple
-        text = soup.get_text(separator=' ', strip=True)
-        text = re.sub(r'\s+', ' ', text)
-        
-        return text[:max_chars] 
-        
-    except Exception as e:
-        return f"Scraping Error: {str(e)}"
-
-# ==============================================================================
-# 4. AI SERVICE LAYER (Logica LLM)
-# ==============================================================================
-
-def analyze_job_with_ai(text: str) -> JobAnalysis:
-    """
-    Trimite textul curățat către Groq și returnează obiectul structurat.
-    """
-    return client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        response_model=JobAnalysis,
-        messages=[
-            {
-                "role": "system", 
-                "content": (
-                    "Ești un Recruiter Expert în IT. Analizează textul jobului cu obiectivitate. "
-                    "Identifică tehnologiile și potențialele probleme (red flags). "
-                    "Răspunde strict în formatul cerut."
-                )
-            },
-            {
-                "role": "user", 
-                "content": f"Analizează acest job description:\n\n{text}"
-            }
-        ],
-        temperature=0.1,
-    )
-
-# ==============================================================================
-# 5. UI - APLICAȚIA STREAMLIT
-# ==============================================================================
 
 st.title("🕵️ GenAI Headhunter Assistant")
 st.markdown("Transformă orice Job Description într-o analiză structurată folosind AI.")

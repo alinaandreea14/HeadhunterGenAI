@@ -42,31 +42,34 @@ with tab1:
                     data = analyze_job_with_ai(raw_text)
                     
                     # -- DISPLAY --
-                    st.divider()
-                    col_h1, col_h2 = st.columns([3, 1])
-                    with col_h1:
-                        st.markdown(f"### {data.role_title}")
-                        st.caption(f"Companie: **{data.company_name}** | Nivel: **{data.seniority}**")
-                        st.caption(f"Salariu: **{data.salary_range.min} - {data.salary_range.max} {data.salary_range.currency} {data.salary_range.frequency}**")
-                        st.caption(f"Locație: **{data.job_location.city}, {data.job_location.country}**")
-                    with col_h2:
-                        color = "normal" if data.match_score > 70 else "inverse"
-                        st.metric("Quality Score", f"{data.match_score}/100", delta_color=color)
+                    col_main, col_right = st.columns([3, 1])
+                    with col_main:
+                        st.divider()
+                        col_h1, col_h2= st.columns([3, 1])
+                        with col_h1:
+                            st.markdown(f"### {data.role_title}")
+                            st.caption(f"Companie: **{data.company_name}** | Nivel: **{data.seniority}**")
+                            st.caption(f"Salariu: **{data.salary_range.min} - {data.salary_range.max} {data.salary_range.currency} {data.salary_range.frequency}**")
+                            st.caption(f"📍 Locație: **{data.job_location.city}, {data.job_location.country}**")
+                        with col_h2:
+                            color = "normal" if data.match_score > 70 else "inverse"
+                            st.metric("Quality Score", f"{data.match_score}/100", delta_color=color)
 
-                    # Detalii
-                    c1, c2, c3 = st.columns(3)
-                    c1.info(f"**Remote:** {'Da' if data.job_location.is_remote else 'Nu'}")
-                    c2.success(f"**Tehnologii:** {len(data.tech_stack)}")
-                    c3.error(f"**Red Flags:** {len(data.red_flags)}")
+                        # Detalii
+                        c1, c2, c3 = st.columns(3)
+                        c1.info(f"**Remote:** {'Da' if data.job_location.is_remote else 'Nu'}")
+                        c2.success(f"**Tehnologii:** {len(data.tech_stack)}")
+                        c3.error(f"**Red Flags:** {len(data.red_flags)}")
 
-                    st.markdown(f"**📝 Rezumat:** {data.summary}")
-                    st.markdown("#### 🛠️ Tech Stack")
-                    st.write(", ".join([f"`{tech}`" for tech in data.tech_stack]))
+                        st.markdown(f"**📝 Rezumat:** {data.summary}")
+                        st.markdown("#### 🛠️ Tech Stack")
+                        st.write(", ".join([f"`{tech}`" for tech in data.tech_stack]))
 
-                    if data.red_flags:
+                    with col_right:
                         st.markdown("#### 🚩 Avertismente")
-                        for flag in data.red_flags:
-                            st.warning(f"⚠️ {flag}")
+                        if data.red_flags:    
+                            for flag in data.red_flags:
+                                st.warning(f"⚠️ {flag.category.capitalize()} ({flag.severity})")
 
                 except Exception as e:
                     st.error(f"Eroare AI: {str(e)}")

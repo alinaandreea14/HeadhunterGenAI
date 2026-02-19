@@ -34,7 +34,7 @@ class RedFlag(BaseModel):
 class JobAnalysis(BaseModel):
     role_title: str = Field(..., description="Standardized job title")
     company_name: str = Field(..., description="Company Name")
-    seniority: Literal["Intern", "Junior", "Mid", "Senior", "Lead", "Architect"] = Field(..., description="Inferred experience level")
+    seniority: Literal["Intern", "Junior", "Mid", "Senior", "Lead", "Architect", "Mid to Senior", "Junior to Mid"] = Field(..., description="Inferred experience level")
     match_score: int = Field(..., ge=0, le=100, description="Score 0-100: Quality of the job description")
     tech_stack: List[str] = Field(..., description="List of specific technologies (in: Python, AWS, React) You can also search by the word Tech")
     red_flags: List[RedFlag] = Field(..., description="List of alarm signals (toxicity, stress, vagueness, unspecified salary, unspecified salary, too many years of experience required)")

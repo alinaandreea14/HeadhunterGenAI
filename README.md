@@ -49,6 +49,7 @@ streamlit run job_analyzer.py
 
 ## 🎨 Deploy
 ```
+https://headhunter-gen-ai.streamlit.app
 ```
 
 ## 🤝 Contributing

@@ -1,5 +1,5 @@
 # ==============================================================================
-# UTILS - SCRAPER (Colectare Date)
+# UTILS - SCRAPER (Data Collection)
 # ==============================================================================
 
 import re
@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 
 def scrape_clean_job_text(url: str, max_chars: int = 3000) -> str:
     """
-    Descarcă pagina și returnează un text curat, optimizat pentru contextul LLM.
+    It downloads the page and returns clean text, optimized for the LLM context.
     """
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -20,11 +20,11 @@ def scrape_clean_job_text(url: str, max_chars: int = 3000) -> str:
             
         soup = BeautifulSoup(response.content, 'html.parser')
         
-        # Eliminăm elementele inutile care consumă tokeni
+        # Remove unnecessary elements that consume tokens.
         for junk in soup(["script", "style", "nav", "footer", "header", "aside", "iframe"]):
             junk.decompose()
             
-        # Extragem textul și eliminăm spațiile multiple
+        # Extract the text and remove the multiple spaces
         text = soup.get_text(separator=' ', strip=True)
         text = re.sub(r'\s+', ' ', text)
         

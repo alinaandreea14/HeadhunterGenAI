@@ -2,42 +2,42 @@
 # DATA MODELS (PYDANTIC SCHEMAS)
 # ==============================================================================
 
-from typing import List, Literal, Self
+from typing import List, Literal, Self, Optional
 from pydantic import BaseModel, Field, model_validator
 
 class SalaryRange(BaseModel):
-    min: int = Field(..., description="Suma minima a salariului")
-    max: int = Field(..., description="Suma maxima a salariului")
-    currency: str = Field(..., description="Moneda (ex: RON, EUR, USD, CHF)")
-    frequency: Literal["anual", "lunar", "pe ora"] = Field(..., description="Frecvența salariului (ex: anual, lunar, pe ora)")
+    min: Optional[int] = Field(default=0, description="Minimum salary value")
+    max: Optional[int] = Field(default=0, description="Maximum salary value")
+    currency: str = Field(..., description="Currency (eg: RON, EUR, USD, CHF)")
+    frequency: Literal["yearly", "monthly", "per hour"] = Field(..., description="Salary frequency (e.g. annual, monthly, per hourly)")
 
 class Location(BaseModel):
-    city: str = Field(..., description="Orasul in care se afla jobul")
-    country: str = Field(..., description="Tara in care se afla jobul")
-    is_remote: bool = Field(False, description="True daca jobul este remote")
-    office_details: str = Field(..., description="Detalii despre birou sau cerințe de prezență fizică (ex: 'Birou în București, 2 zile pe săptămână')")
+    city: str = Field(..., description="The city where the job is located")
+    country: str = Field(..., description="Country where the job is located")
+    is_remote: bool = Field(False, description="True if the job is remote")
+    office_details: str = Field(..., description="Office details or physical presence requirements (e.g. 'Office in Bucharest, 2 days a week, hybrid, on-site')")
 
     @model_validator(mode="after")
     def check_remote_consistency(self) -> Self:
-        office_keywords = ["birou", "office", "on-site", "prezență fizică", "in-person", "hibrid"]
+        office_keywords = ["office", "on-site", "physical presence", "in-person", "hybrid"]
         office_details_lower = self.office_details.lower()
 
         if self.is_remote and any(keyword in office_details_lower for keyword in office_keywords):
-            raise ValueError("Inconsistență: 'is_remote' este True, dar 'office_details' sugerează prezență fizică.")
+            raise ValueError("Inconsistency: 'is remote' is True, but 'office details' suggests physical presence.")
         
         return self
 
 class RedFlag(BaseModel):
-    severity: Literal["low", "medium", "high"] = Field(..., description="Nivelul de gravitate al red flag-ului")
-    category: Literal["toxicity" "vague", "unrealistic"] = Field(..., description="Categoria problemei identificate")
+    severity: Literal["low", "medium", "high"] = Field(..., description="Red flag severity level")
+    category: Literal["toxicity" "vague", "unrealistic", "unspecified salary", "unspecified salary", "too many years of experience required"] = Field(..., description="Category of the identified problem")
 
 class JobAnalysis(BaseModel):
-    role_title: str = Field(..., description="Titlul jobului standardizat")
-    company_name: str = Field(..., description="Numele companiei")
-    seniority: Literal["Intern", "Junior", "Mid", "Senior", "Lead", "Architect"] = Field(..., description="Nivelul de experiență dedus")
-    match_score: int = Field(..., ge=0, le=100, description="Scor 0-100: Calitatea descrierii jobului")
-    tech_stack: List[str] = Field(..., description="Listă cu tehnologii specifice (ex: Python, AWS, React) Poti sa cauti si dupa cuvantul Tech")
-    red_flags: List[RedFlag] = Field(..., description="Lista de semnale de alarmă (toxicitate, stres, vaguitate)")
-    summary: str = Field(..., description="Un rezumat scurt al rolului (max 2 fraze) în limba română")
-    salary_range: SalaryRange = Field(..., description="Intervalul salarial dacă este menționat")
-    job_location: Location = Field(..., description="Informații despre locația jobului")
+    role_title: str = Field(..., description="Standardized job title")
+    company_name: str = Field(..., description="Company Name")
+    seniority: Literal["Intern", "Junior", "Mid", "Senior", "Lead", "Architect"] = Field(..., description="Inferred experience level")
+    match_score: int = Field(..., ge=0, le=100, description="Score 0-100: Quality of the job description")
+    tech_stack: List[str] = Field(..., description="List of specific technologies (in: Python, AWS, React) You can also search by the word Tech")
+    red_flags: List[RedFlag] = Field(..., description="List of alarm signals (toxicity, stress, vagueness, unspecified salary, unspecified salary, too many years of experience required)")
+    summary: str = Field(..., description="A short summary of the role (max 2 sentences) in Romanian")
+    salary_range: Optional[SalaryRange] = Field(..., description="Salary range if mentioned")
+    job_location: Location = Field(..., description="Job location information")

@@ -7,6 +7,59 @@ import pandas as pd
 from src.services.scraper import scrape_clean_job_text
 from src.services.llm_service import analyze_job_with_ai
 
+st.markdown("""
+    <style>
+    /* Main Background & Font */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+    
+    html, body, [class*="css"]  {
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* Glassmorphism Card Style */
+    .job-card {
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 15px;
+        padding: 25px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 20px;
+    }
+
+    /* Score Circle */
+    .score-container {
+        text-align: center;
+        border-left: 2px solid #ff4b4b;
+        padding-left: 20px;
+    }
+
+    /* Tech Badge Styling */
+    .tech-badge {
+        display: inline-block;
+        background: #1e293b;
+        color: #38bdf8;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        margin: 4px;
+        border: 1px solid #38bdf8;
+    }
+    
+    /* Hover effects for buttons */
+    .stButton>button {
+        width: 100%;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #ff4b4b 0%, #ff8080 100%);
+        color: white;
+        border: none;
+        transition: 0.3s;
+    }
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(255, 75, 75, 0.4);
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 # Sidebar Informativ (Fără input de date sensibile)
 with st.sidebar:
     st.header("🕵️ GenAI Headhunter")
@@ -49,11 +102,16 @@ with tab1:
                         with col_h1:
                             st.markdown(f"### {data.role_title}")
                             st.caption(f"Companie: **{data.company_name}** | Nivel: **{data.seniority}**")
-                            st.caption(f"Salariu: **{data.salary_range.min} - {data.salary_range.max} {data.salary_range.currency} {data.salary_range.frequency}**")
+                            st.caption(f"Salariu: 💰 **{data.salary_range.min} - {data.salary_range.max} {data.salary_range.currency} {data.salary_range.frequency}**")
                             st.caption(f"📍 Locație: **{data.job_location.city}, {data.job_location.country}**")
+                            st.markdown('<div class="job_card">', unsafe_allow_html=True)
                         with col_h2:
-                            color = "normal" if data.match_score > 70 else "inverse"
-                            st.metric("Quality Score", f"{data.match_score}/100", delta_color=color)
+                            st.markdown(f"""
+                                <div class="score-container">
+                                <p style="margin-bottom:0;">Quality Score</p>
+                                <h1 style="color:#ff4b4b; font-size: 3rem;">{data.match_score}<span style="font-size:1.2rem; color:grey;">/100</span></h1>
+                                </div>
+                            """, unsafe_allow_html=True)
 
                         # Detalii
                         c1, c2, c3 = st.columns(3)
@@ -62,8 +120,12 @@ with tab1:
                         c3.error(f"**Red Flags:** {len(data.red_flags)}")
 
                         st.markdown(f"**📝 Rezumat:** {data.summary}")
-                        st.markdown("#### 🛠️ Tech Stack")
-                        st.write(", ".join([f"`{tech}`" for tech in data.tech_stack]))
+                        st.markdown('</div>', unsafe_allow_html=True)
+                        
+                        st.subheader("🛠️ Tech Stack")
+                        techs = ["Python", "TensorFlow", "PyTorch", "Docker", "AWS", "SQL"]
+                        tech_html = "".join([f'<span class="tech-badge">{tech}</span>' for tech in data.tech_stack])
+                        st.markdown(tech_html, unsafe_allow_html=True)
 
                     with col_right:
                         st.markdown("#### 🚩 Avertismente")
